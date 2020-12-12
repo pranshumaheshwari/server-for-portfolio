@@ -1,15 +1,34 @@
 let axios = require("axios");
 const cheerio = require("cheerio");
 const express = require("express");
-var cors = require("cors");
+const cors = require("cors");
 const app = express();
+const schedule = require('node-schedule');
+
+
+const db = require('./models/index.js');
+
+
 const port = 3000;
 
+
 app.use(cors());
+const rule = new schedule.RecurrenceRule();
+rule.hour = 0
+rule.minute = 0
+schedule.scheduleJob(rule, async () => {
+	const d = new Date()
+	const data = await getValue()
+	db.Portfolio.create({
+		date: d.toUTCString(),
+		value: data.totalValue
+	})
+})
+
 
 const URL = `https://www.moneycontrol.com/mutual-funds/nav/dsp-tax-saver-fund-regular/MDS060`;
 
-app.get("/", (req, Res) => {
+app.get("/", async (req, Res) => {
 	axios
 		.get(URL)
 		.then((res) => res.data)
@@ -26,7 +45,20 @@ app.get("/", (req, Res) => {
 		});
 });
 
+app.get("/oldValue", async (req, res) => {
+	const data = await db.Portfolio.findOne({
+		order: [
+			['createdAt', 'DESC']
+		]
+	})
+	res.json(data)
+})
+
 app.get("/value", async (req, res) => {
+	res.json(getValue())
+});
+
+const getValue = async () => {
 	const URL = [
 		`https://api.mfapi.in/mf/146127`,
 		`https://server-for-portfolio.herokuapp.com`,
@@ -79,13 +111,13 @@ app.get("/value", async (req, res) => {
 				});
 		}
 	})();
-
-	res.json({
+	
+	return {
 		currentValue,
 		currentNAV,
 		totalValue: currentValue.reduce((accumalator, currentValue) => accumalator + currentValue)
-	})
-});
+	}
+}
 
 app.listen(process.env.PORT || port, () =>
 	console.log(`App listening on port ${port}!`)
