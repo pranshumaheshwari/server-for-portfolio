@@ -55,7 +55,13 @@ app.get("/oldValue", async (req, res) => {
 })
 
 app.get("/value", async (req, res) => {
-	res.json(await getValue())
+	const d = new Date()
+	const data = await getValue()
+	db.Portfolio.create({
+		date: d.toUTCString(),
+		value: data.totalValue
+	})
+	res.json(data)
 });
 
 const getValue = async () => {
