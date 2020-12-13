@@ -55,7 +55,7 @@ app.get("/oldValue", async (req, res) => {
 })
 
 app.get("/value", async (req, res) => {
-	res.json(getValue())
+	res.json(await getValue())
 });
 
 const getValue = async () => {
